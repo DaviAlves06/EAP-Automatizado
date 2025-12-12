@@ -175,11 +175,21 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Em ambientes serverless (ex.: Vercel), /tmp é gravável
-BASE_DIR = os.getenv("TMPDIR") or tempfile.gettempdir()
+# Vercel usa /tmp como diretório temporário
+BASE_DIR = os.getenv("TMPDIR") or os.getenv("VERCEL") and "/tmp" or tempfile.gettempdir()
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+except Exception as e:
+    # Se não conseguir criar, usar diretório temporário do sistema
+    BASE_DIR = tempfile.gettempdir()
+    UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+    OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 @app.after_request
