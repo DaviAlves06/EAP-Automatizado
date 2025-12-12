@@ -59,6 +59,15 @@ def handler(req, res):
         if not path.startswith('/'):
             path = '/' + path
         
+        # Tratar arquivos estáticos comuns (favicon, robots.txt, etc.)
+        # Retornar 404 para evitar processamento desnecessário
+        static_files = ['/favicon.ico', '/favicon.png', '/robots.txt', '/apple-touch-icon.png']
+        if path.lower() in static_files:
+            res.status(404)
+            res.set_header('Content-Type', 'text/plain')
+            res.send('Not Found')
+            return
+        
         # Query string
         query_string = ''
         if hasattr(req, 'query'):
@@ -124,22 +133,33 @@ def handler(req, res):
             headers_list.extend(response_headers)
         
         # Executar app Flask
-        result = app(environ, start_response)
-        
-        # Coletar resposta
-        for part in result:
-            if isinstance(part, bytes):
-                body_parts.append(part)
-            else:
-                body_parts.append(part.encode('utf-8'))
-        
-        response_body = b''.join(body_parts)
-        
-        # Configurar resposta da Vercel
-        res.status(status_code[0])
-        for header, value in headers_list:
-            res.set_header(header, value)
-        res.send(response_body)
+        try:
+            result = app(environ, start_response)
+            
+            # Coletar resposta
+            for part in result:
+                if isinstance(part, bytes):
+                    body_parts.append(part)
+                else:
+                    body_parts.append(part.encode('utf-8'))
+            
+            response_body = b''.join(body_parts)
+            
+            # Configurar resposta da Vercel
+            res.status(status_code[0])
+            for header, value in headers_list:
+                res.set_header(header, value)
+            res.send(response_body)
+            
+        except Exception as flask_error:
+            # Se o Flask gerar erro, retornar erro 500
+            error_trace = traceback.format_exc()
+            print(f"ERRO no Flask: {str(flask_error)}")
+            print(error_trace)
+            
+            res.status(500)
+            res.set_header('Content-Type', 'application/json')
+            res.send(f'{{"success": false, "error": "Erro no processamento: {str(flask_error)}"}}')
         
     except Exception as e:
         error_trace = traceback.format_exc()

@@ -350,6 +350,15 @@ def index():
     return render_template_string(HTML_PAGE)
 
 
+@app.route("/favicon.ico")
+@app.route("/favicon.png")
+@app.route("/robots.txt")
+@app.route("/apple-touch-icon.png")
+def static_files():
+    """Retornar 404 para arquivos estáticos comuns"""
+    return "", 404
+
+
 @app.route("/upload", methods=["POST"])
 def upload():
     file = request.files.get("file")
