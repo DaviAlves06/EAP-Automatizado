@@ -172,6 +172,7 @@ def extract_to_excel(xml_path, output_dir, excel_name: str | None = None):
 
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Em ambientes serverless (ex.: Vercel), /tmp é gravável
 BASE_DIR = os.getenv("TMPDIR") or tempfile.gettempdir()
@@ -179,6 +180,27 @@ UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+@app.after_request
+def after_request(response):
+    """Adicionar headers CORS"""
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    return response
+
+
+@app.errorhandler(413)
+def too_large(e):
+    """Tratar arquivo muito grande"""
+    return jsonify(success=False, error="Arquivo muito grande. Tamanho máximo: 50MB"), 413
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    """Tratar erros internos"""
+    return jsonify(success=False, error=f"Erro interno: {str(e)}"), 500
 
 
 HTML_PAGE = """
@@ -250,19 +272,36 @@ HTML_PAGE = """
       }
       status.innerHTML = 'Processando...';
       fetch('/upload', { method: 'POST', body: formData })
-        .then(res => res.json())
+        .then(async res => {
+          // Verificar se a resposta é JSON antes de fazer parse
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 200)}`);
+          }
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: `Erro ${res.status}: ${res.statusText}` }));
+            throw new Error(errorData.error || `Erro ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
           if (!data.success) {
-            status.innerHTML = '<b>Erro:</b> ' + data.error;
+            status.innerHTML = '<b>Erro:</b> ' + (data.error || 'Erro desconhecido');
             return;
           }
           status.innerHTML = `
-            <p><b>Blocos encontrados:</b> ${data.blocks}</p>
-            <p><a href="${data.download_url}">Baixar Excel gerado</a></p>
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 16px; margin-top: 16px;">
+              <p style="margin: 0 0 8px 0;"><b>✅ Processamento concluído!</b></p>
+              <p style="margin: 0 0 12px 0;"><b>Blocos encontrados:</b> ${data.blocks}</p>
+              <a href="${data.download_url}" style="display: inline-block; padding: 10px 20px; background: #3f51b5; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">📥 Baixar Excel gerado</a>
+            </div>
           `;
         })
         .catch(err => {
-          status.innerHTML = '<b>Erro:</b> ' + err;
+          status.innerHTML = `<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 16px; margin-top: 16px; color: #721c24;">
+            <b>❌ Erro:</b> ${err.message || err}
+          </div>`;
         });
     }
 
