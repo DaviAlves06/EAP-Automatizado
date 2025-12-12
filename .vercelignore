@@ -1,0 +1,9 @@
+outputs/
+uploads/
+*.xlsx
+__pycache__/
+*.pyc
+.python-version
+venv/
+env/
+
