@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extracao de Blocos EAP - Download e Instrucoes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .step {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+        
+        .download-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .download-btn.secondary {
+            background: #28a745;
+        }
+        
+        .download-btn.secondary:hover {
+            background: #218838;
+        }
+        
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .feature {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Extração de Blocos EAP</h1>
+        <p class="subtitle">Aplicação web para extrair dados do MS Project para Excel</p>
+        
+        <div class="section">
+            <h2>🚀 Início Rápido</h2>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Baixe o projeto completo</strong>
+                <p style="margin-top: 10px; color: #666;">
+                    Baixe todos os arquivos do repositório (ou clique no botão abaixo se disponível)
+                </p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Execute o arquivo de inicialização</strong>
+                <p style="margin-top: 10px; color: #666;">
+                    <strong style="color: #d9534f; font-size: 1.1em;">Windows:</strong> Clique duas vezes no arquivo <strong>"EXECUTE PARA ABRIR.bat"</strong><br>
+                    <strong>Linux/Mac:</strong> Execute <code>./iniciar.sh</code> no terminal
+                </p>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;">
+                    <strong>⚠️ Importante:</strong> Procure pelo arquivo com o nome <strong>"EXECUTE PARA ABRIR.bat"</strong> na pasta extraída!
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Use a aplicação</strong>
+                <p style="margin-top: 10px; color: #666;">
+                    O navegador abrirá automaticamente em <code>http://localhost:5000</code>
+                </p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📥 Download do Projeto</h2>
+            <p style="margin-bottom: 15px; font-weight: bold; color: #667eea; font-size: 1.1em;">
+                ⬇️ Baixe o arquivo ZIP completo do projeto:
+            </p>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="https://github.com/DaviAlves06/EAP-Automatizado/archive/refs/heads/main.zip" class="download-btn" style="font-size: 1.2em; padding: 20px 40px;">
+                    📦 BAIXAR PROJETO COMPLETO (ZIP)
+                </a>
+            </div>
+            <div class="warning" style="margin-top: 20px;">
+                <strong>📝 Após baixar e extrair:</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>Extraia o arquivo ZIP em uma pasta</li>
+                    <li><strong style="color: #d9534f; font-size: 1.1em;">Clique duas vezes no arquivo "EXECUTE PARA ABRIR.bat"</strong></li>
+                    <li>Aguarde a instalação automática</li>
+                    <li>O navegador abrirá automaticamente!</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>✨ Funcionalidades</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <strong>Extração Automática</strong>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                        Extrai blocos e subtarefas automaticamente
+                    </p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📁</div>
+                    <strong>Arrastar e Soltar</strong>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                        Interface simples e intuitiva
+                    </p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <strong>Sem Limites</strong>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                        Processa arquivos de qualquer tamanho
+                    </p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🆓</div>
+                    <strong>100% Gratuito</strong>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                        Open source e sem custos
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>⚙️ Requisitos</h2>
+            <div class="warning">
+                <strong>⚠️ Importante:</strong> Você precisa ter Python 3.8 ou superior instalado.
+            </div>
+            <p style="margin-top: 15px;">
+                <strong>Windows:</strong> Baixe de <a href="https://www.python.org/downloads/" target="_blank">python.org</a><br>
+                <strong>Linux/Mac:</strong> Geralmente já vem instalado
+            </p>
+            <p style="margin-top: 10px; color: #666;">
+                Durante a instalação do Python (Windows), certifique-se de marcar <strong>"Add Python to PATH"</strong>
+            </p>
+        </div>
+        
+        <div class="section">
+            <h2>📝 Instruções Detalhadas</h2>
+            <div class="success">
+                <strong>✅ Resumo Rápido:</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>Baixe o ZIP do projeto (botão acima)</li>
+                    <li>Extraia o arquivo ZIP</li>
+                    <li><strong style="color: #d9534f;">Clique duas vezes em "EXECUTE PARA ABRIR.bat"</strong></li>
+                    <li>Pronto! A aplicação abrirá automaticamente</li>
+                </ol>
+            </div>
+            <p style="margin-top: 15px;">Para instruções completas, consulte:</p>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li><a href="README.md">README.md</a> - Documentação completa</li>
+                <li><a href="INICIO_RAPIDO.md">INICIO_RAPIDO.md</a> - Guia de início rápido</li>
+            </ul>
+        </div>
+        
+        <div class="success" style="margin-top: 30px;">
+            <strong>✅ Vantagens de usar localmente:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>Sem limites de tamanho de arquivo</li>
+                <li>Funciona offline após primeira instalação</li>
+                <li>Mais rápido e privado</li>
+                <li>Totalmente gratuito</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

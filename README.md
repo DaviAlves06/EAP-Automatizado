@@ -22,7 +22,27 @@ pip install flask openpyxl
 
 ## 🚀 Como usar a aplicação web
 
-### Opção 1: Uso local
+### ⚡ Início Rápido (Recomendado)
+
+**📥 Passo 1: Baixar o Projeto**
+- Baixe o arquivo ZIP do projeto (botão de download disponível na página HTML ou no GitHub)
+- Extraia o arquivo ZIP em uma pasta de sua escolha
+
+**🪟 Para Windows:**
+1. Abra a pasta onde você extraiu o projeto
+2. **Clique duas vezes no arquivo `EXECUTE PARA ABRIR.bat`** (o nome do arquivo deixa claro o que fazer!)
+3. Aguarde a instalação automática das dependências
+4. O navegador abrirá automaticamente em `http://localhost:5000`
+5. Pronto! Use a interface web
+
+**🐧 Para Linux/Mac:**
+1. Abra o terminal na pasta do projeto
+2. Execute: `chmod +x iniciar.sh && ./iniciar.sh`
+3. Acesse `http://localhost:5000` no navegador
+
+> 💡 **Dica:** O arquivo `EXECUTE PARA ABRIR.bat` foi nomeado especificamente para deixar claro que é o arquivo que deve ser executado!
+
+### Opção 1: Uso local (Manual)
 
 1. **Instale as dependências:**
    ```bash
@@ -139,14 +159,59 @@ A aplicação processa o arquivo XML exportado do MS Project e:
 
 ```
 EAP Automação/
-├── web_frontend.py      # Aplicação Flask principal
+├── EXECUTE PARA ABRIR.bat  # ⭐ ARQUIVO PRINCIPAL - Clique aqui para iniciar (Windows)
+├── web_frontend.py         # Aplicação Flask principal
+├── iniciar.sh              # Script de inicialização (Linux/Mac)
+├── index.html              # Página de download e instruções
+├── INICIO_RAPIDO.md        # Guia de início rápido
 ├── api/
-│   └── index.py         # Handler para Vercel
-├── vercel.json          # Configuração do deploy Vercel
-├── requirements.txt     # Dependências Python
-├── app.py              # Script original (para referência)
-└── README.md           # Este arquivo
+│   └── index.py            # Handler para Vercel (opcional)
+├── vercel.json             # Configuração do deploy Vercel (opcional)
+├── requirements.txt        # Dependências Python
+├── app.py                  # Script original (para referência)
+└── README.md               # Este arquivo
 ```
+
+> ⚠️ **IMPORTANTE:** Após baixar e extrair o projeto, procure pelo arquivo **`EXECUTE PARA ABRIR.bat`** e clique duas vezes nele para iniciar a aplicação!
+
+## 🌐 Compartilhamento Fácil
+
+### Opção 1: Página HTML de Download
+1. Faça upload do arquivo `index.html` para qualquer serviço de hospedagem estática:
+   - GitHub Pages
+   - Netlify
+   - Vercel (apenas para a página HTML)
+   - Google Drive (compartilhar como link público)
+   - Qualquer servidor web
+
+2. Os usuários podem:
+   - Acessar a página HTML
+   - Ver instruções claras
+   - Baixar o projeto completo
+   - Seguir os passos para executar localmente
+
+### Opção 2: Repositório GitHub
+1. Faça upload do projeto para o GitHub
+2. Compartilhe o link do repositório
+3. Os usuários podem:
+   - Clicar em "Code" → "Download ZIP" para baixar
+   - Ou clonar o repositório
+4. Após extrair, executar `EXECUTE PARA ABRIR.bat` (Windows)
+
+### Opção 3: Arquivo ZIP Manual
+1. Compacte todos os arquivos do projeto (exceto pastas `outputs/` e `uploads/`)
+2. Compartilhe o arquivo ZIP
+3. Os usuários extraem e executam **`EXECUTE PARA ABRIR.bat`** (Windows) ou `iniciar.sh` (Linux/Mac)
+
+### 📦 Arquivos para incluir no ZIP:
+- ✅ `EXECUTE PARA ABRIR.bat` (obrigatório)
+- ✅ `web_frontend.py` (obrigatório)
+- ✅ `iniciar.sh` (obrigatório)
+- ✅ `requirements.txt` (obrigatório)
+- ✅ `README.md` (recomendado)
+- ✅ `INICIO_RAPIDO.md` (recomendado)
+- ✅ `index.html` (opcional, para compartilhamento)
+- ❌ Não incluir: `outputs/`, `uploads/`, `__pycache__/`, `*.pyc`
 
 ---
 
@@ -157,6 +222,27 @@ EAP Automação/
 - ✅ O campo **"Número1"** deve estar preenchido no MS Project para aparecer no Excel
 - ✅ A aplicação processa apenas arquivos `.xml` (não aceita `.mpp` diretamente)
 - ✅ Arquivos temporários são limpos automaticamente após o processamento
+
+## 📦 Limites de tamanho de arquivo
+
+### Na Vercel:
+
+- **Plano Hobby (gratuito):**
+  - Limite máximo: **4.5MB** por requisição
+  - Arquivos maiores serão rejeitados com erro 413
+
+- **Plano Pro:**
+  - Limite máximo: **50MB** por requisição
+  - Timeout aumentado para 60 segundos
+  - Memória aumentada para processar arquivos grandes
+
+### Recomendações:
+
+- Para arquivos **até 4.5MB**: Funciona em qualquer plano
+- Para arquivos **entre 4.5MB e 50MB**: Requer plano Pro da Vercel
+- Para arquivos **acima de 50MB**: Considere processar localmente ou dividir o arquivo
+
+> 💡 **Dica:** Arquivos XML do MS Project geralmente são bem compactos. Se seu arquivo for muito grande, verifique se há dados desnecessários que podem ser removidos antes da exportação.
 
 ---
 

@@ -172,8 +172,9 @@ def extract_to_excel(xml_path, output_dir, excel_name: str | None = None):
 
 
 app = Flask(__name__)
-# Limite reduzido para evitar problemas na Vercel (Hobby plan tem limite de 4.5MB)
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB max
+# Limite aumentado para 50MB (requer plano Pro da Vercel)
+# Plano Hobby tem limite de 4.5MB, Pro tem 50MB
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Em ambientes serverless (ex.: Vercel), /tmp é gravável
 # Vercel usa /tmp como diretório temporário
@@ -304,12 +305,21 @@ HTML_PAGE = """
       }
       status.innerHTML = 'Processando...';
       
-      // Verificar tamanho do arquivo antes de enviar
-      if (file.size > 4 * 1024 * 1024) {
+      // Verificar tamanho do arquivo antes de enviar (limite: 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
         status.innerHTML = `<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 16px; margin-top: 16px; color: #721c24;">
-          <b>❌ Erro:</b> Arquivo muito grande. Tamanho máximo: 4MB. Seu arquivo tem ${(file.size / 1024 / 1024).toFixed(2)}MB
+          <b>❌ Erro:</b> Arquivo muito grande. Tamanho máximo: 50MB. Seu arquivo tem ${(file.size / 1024 / 1024).toFixed(2)}MB
+          <br><small>Nota: Arquivos acima de 4.5MB requerem plano Pro da Vercel.</small>
         </div>`;
         return;
+      }
+      
+      // Mostrar aviso se arquivo for grande (mas ainda dentro do limite)
+      if (file.size > 4.5 * 1024 * 1024) {
+        status.innerHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-top: 16px; color: #856404;">
+          <b>⚠️ Aviso:</b> Arquivo grande (${(file.size / 1024 / 1024).toFixed(2)}MB). Requer plano Pro da Vercel. Processando...
+        </div>`;
       }
       
       fetch('/upload', { 
@@ -409,13 +419,17 @@ def upload():
         
         excel_name = request.form.get("excel_name", "").strip()
         
-        # Verificar tamanho do arquivo (limite: 4MB para evitar problemas na Vercel Hobby plan)
+        # Verificar tamanho do arquivo (limite: 50MB - requer plano Pro da Vercel)
         file.seek(0, os.SEEK_END)
         file_size = file.tell()
         file.seek(0)
         
-        if file_size > 4 * 1024 * 1024:  # 4MB
-            return jsonify(success=False, error="Arquivo muito grande. Tamanho máximo: 4MB"), 413
+        if file_size > 50 * 1024 * 1024:  # 50MB
+            return jsonify(
+                success=False, 
+                error=f"Arquivo muito grande. Tamanho máximo: 50MB. Seu arquivo tem {file_size / 1024 / 1024:.2f}MB. "
+                      "Nota: Requer plano Pro da Vercel para arquivos acima de 4.5MB."
+            ), 413
         
         if file_size == 0:
             return jsonify(success=False, error="Arquivo vazio"), 400
@@ -465,5 +479,27 @@ def download(filename):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    import webbrowser
+    import threading
+    
+    # Abrir navegador automaticamente após 1 segundo
+    def open_browser():
+        import time
+        time.sleep(1.5)
+        webbrowser.open('http://localhost:5000')
+    
+    # Iniciar thread para abrir navegador
+    browser_thread = threading.Thread(target=open_browser)
+    browser_thread.daemon = True
+    browser_thread.start()
+    
+    print("\n" + "="*50)
+    print("  Extracao de Blocos - EAP Automacao")
+    print("="*50)
+    print("\n  Servidor iniciado com sucesso!")
+    print(f"  Acesse: http://localhost:5000")
+    print("\n  Pressione CTRL+C para parar o servidor")
+    print("="*50 + "\n")
+    
+    app.run(host="0.0.0.0", port=5000, debug=False)
 
