@@ -172,7 +172,8 @@ def extract_to_excel(xml_path, output_dir, excel_name: str | None = None):
 
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
+# Limite reduzido para evitar problemas na Vercel (Hobby plan tem limite de 4.5MB)
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB max
 
 # Em ambientes serverless (ex.: Vercel), /tmp é gravável
 # Vercel usa /tmp como diretório temporário
@@ -210,9 +211,16 @@ except (OSError, PermissionError) as e:
 def after_request(response):
     """Adicionar headers CORS"""
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
+    response.headers.add('Access-Control-Max-Age', '3600')
     return response
+
+
+@app.route("/upload", methods=["OPTIONS"])
+def upload_options():
+    """Tratar requisições OPTIONS (CORS preflight)"""
+    return "", 200
 
 
 @app.errorhandler(413)
@@ -295,14 +303,36 @@ HTML_PAGE = """
         formData.append('excel_name', excelName.value.trim());
       }
       status.innerHTML = 'Processando...';
-      fetch('/upload', { method: 'POST', body: formData })
+      
+      // Verificar tamanho do arquivo antes de enviar
+      if (file.size > 4 * 1024 * 1024) {
+        status.innerHTML = `<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 16px; margin-top: 16px; color: #721c24;">
+          <b>❌ Erro:</b> Arquivo muito grande. Tamanho máximo: 4MB. Seu arquivo tem ${(file.size / 1024 / 1024).toFixed(2)}MB
+        </div>`;
+        return;
+      }
+      
+      fetch('/upload', { 
+        method: 'POST', 
+        body: formData,
+        headers: {
+          // Não definir Content-Type - deixar o browser definir automaticamente para FormData
+        }
+      })
         .then(async res => {
           // Verificar se a resposta é JSON antes de fazer parse
-          const contentType = res.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
+          const contentType = res.headers.get('content-type') || '';
+          
+          if (res.status === 403) {
+            const text = await res.text();
+            throw new Error(`Acesso negado (403). Verifique se o arquivo não excede 4MB. Detalhes: ${text.substring(0, 200)}`);
+          }
+          
+          if (!contentType.includes('application/json')) {
             const text = await res.text();
             throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 200)}`);
           }
+          
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({ error: `Erro ${res.status}: ${res.statusText}` }));
             throw new Error(errorData.error || `Erro ${res.status}`);
@@ -361,28 +391,72 @@ def static_files():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    file = request.files.get("file")
-    if not file or not file.filename.lower().endswith(".xml"):
-        return jsonify(success=False, error="Envie um arquivo XML exportado do MS Project"), 400
-    excel_name = request.form.get("excel_name") or ""
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".xml", dir=UPLOAD_DIR) as tmp:
-        file.save(tmp.name)
-        temp_path = tmp.name
-
+    """Endpoint para upload e processamento de arquivos XML"""
     try:
-        blocks, excel_path = extract_to_excel(temp_path, OUTPUT_DIR, excel_name=excel_name)
-        download_name = os.path.basename(excel_path)
-        return jsonify(
-            success=True,
-            blocks=blocks,
-            download_url=f"/download/{download_name}",
-        )
+        # Verificar se há arquivo na requisição
+        if 'file' not in request.files:
+            return jsonify(success=False, error="Nenhum arquivo enviado"), 400
+        
+        file = request.files['file']
+        
+        # Verificar se o arquivo foi selecionado
+        if file.filename == '':
+            return jsonify(success=False, error="Nenhum arquivo selecionado"), 400
+        
+        # Verificar extensão
+        if not file.filename.lower().endswith(".xml"):
+            return jsonify(success=False, error="Envie um arquivo XML exportado do MS Project"), 400
+        
+        excel_name = request.form.get("excel_name", "").strip()
+        
+        # Verificar tamanho do arquivo (limite: 4MB para evitar problemas na Vercel Hobby plan)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > 4 * 1024 * 1024:  # 4MB
+            return jsonify(success=False, error="Arquivo muito grande. Tamanho máximo: 4MB"), 413
+        
+        if file_size == 0:
+            return jsonify(success=False, error="Arquivo vazio"), 400
+        
+        # Salvar arquivo temporário
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xml", dir=UPLOAD_DIR) as tmp:
+                file.save(tmp.name)
+                temp_path = tmp.name
+        except Exception as e:
+            return jsonify(success=False, error=f"Erro ao salvar arquivo: {str(e)}"), 500
+        
+        # Processar arquivo
+        try:
+            blocks, excel_path = extract_to_excel(temp_path, OUTPUT_DIR, excel_name=excel_name)
+            download_name = os.path.basename(excel_path)
+            return jsonify(
+                success=True,
+                blocks=blocks,
+                download_url=f"/download/{download_name}",
+            )
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"Erro ao processar XML: {str(e)}")
+            print(error_trace)
+            return jsonify(success=False, error=f"Erro ao processar arquivo: {str(e)}"), 500
+        finally:
+            # Limpar arquivo temporário
+            try:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except:
+                pass
+                
     except Exception as e:
-        return jsonify(success=False, error=str(e)), 500
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Erro geral no upload: {str(e)}")
+        print(error_trace)
+        return jsonify(success=False, error=f"Erro no servidor: {str(e)}"), 500
 
 
 @app.route("/download/<path:filename>")
