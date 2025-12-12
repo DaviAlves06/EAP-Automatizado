@@ -1,6 +1,6 @@
 """
-Handler para Vercel Serverless Functions
-Formato simplificado e robusto
+Handler para Vercel Serverless Functions - Flask
+Seguindo a documentação oficial da Vercel para Python/Flask
 """
 import os
 import sys
@@ -11,68 +11,58 @@ ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-# Tentar importar o app Flask
+# Importar o app Flask
 try:
     from web_frontend import app
     APP_LOADED = True
-    print("✅ App Flask carregado com sucesso")
 except Exception as e:
     APP_LOADED = False
     ERROR_MESSAGE = str(e)
     ERROR_TRACE = traceback.format_exc()
-    print(f"❌ ERRO ao importar web_frontend: {ERROR_MESSAGE}")
+    print(f"ERRO ao importar web_frontend: {ERROR_MESSAGE}")
     print(ERROR_TRACE)
 
 
-def handler(request):
+def handler(req, res):
     """
-    Handler principal para Vercel
-    Converte requisições da Vercel para WSGI e executa o app Flask
+    Handler WSGI para Vercel Serverless Functions
+    Converte requisições da Vercel para formato WSGI do Flask
     """
-    # Se o app não foi carregado, retornar erro informativo
+    # Se o app não foi carregado, retornar erro
     if not APP_LOADED:
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'text/html; charset=utf-8'},
-            'body': f'''
-            <html>
-            <head><title>Erro de Importação</title></head>
-            <body style="font-family: Arial; padding: 20px;">
-                <h1>❌ Erro ao carregar aplicação</h1>
-                <p><strong>Erro:</strong> {ERROR_MESSAGE}</p>
-                <details>
-                    <summary>Detalhes técnicos</summary>
-                    <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">{ERROR_TRACE}</pre>
-                </details>
-            </body>
-            </html>
-            '''
-        }
+        res.status(500)
+        res.set_header('Content-Type', 'text/html; charset=utf-8')
+        res.send(f'''
+        <html>
+        <head><title>Erro de Importação</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h1>❌ Erro ao carregar aplicação</h1>
+            <p><strong>Erro:</strong> {ERROR_MESSAGE}</p>
+            <details>
+                <summary>Detalhes técnicos</summary>
+                <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">{ERROR_TRACE}</pre>
+            </details>
+        </body>
+        </html>
+        ''')
+        return
     
     from io import BytesIO
     from urllib.parse import urlparse
     
     try:
-        # Extrair informações básicas da requisição
-        method = getattr(request, 'method', 'GET') or 'GET'
+        # Extrair informações da requisição da Vercel
+        method = getattr(req, 'method', 'GET') or 'GET'
         
-        # Obter path
-        path = '/'
-        if hasattr(request, 'path') and request.path:
-            path = request.path
-        elif hasattr(request, 'url'):
-            url_val = request.url
-            if isinstance(url_val, str):
-                parsed = urlparse(url_val)
-                path = parsed.path or '/'
-        
-        if not path or not path.startswith('/'):
-            path = '/'
+        # Path
+        path = getattr(req, 'path', '/') or '/'
+        if not path.startswith('/'):
+            path = '/' + path
         
         # Query string
         query_string = ''
-        if hasattr(request, 'query'):
-            q = request.query
+        if hasattr(req, 'query'):
+            q = req.query
             if isinstance(q, dict):
                 from urllib.parse import urlencode
                 query_string = urlencode(q)
@@ -81,27 +71,24 @@ def handler(request):
         
         # Body
         body = b''
-        if hasattr(request, 'body'):
-            body_val = request.body
+        if hasattr(req, 'body'):
+            body_val = req.body
             if body_val:
                 if isinstance(body_val, str):
                     body = body_val.encode('utf-8')
                 elif isinstance(body_val, bytes):
                     body = body_val
-                else:
-                    body = str(body_val).encode('utf-8')
         
         # Headers
         content_type = ''
         headers_dict = {}
-        if hasattr(request, 'headers'):
-            h = request.headers
+        if hasattr(req, 'headers'):
+            h = req.headers
             if isinstance(h, dict):
                 headers_dict = h
                 content_type = h.get('content-type', '')
             elif hasattr(h, 'get'):
                 content_type = h.get('content-type', '')
-                headers_dict = {k: h.get(k) for k in ['content-type', 'content-length'] if h.get(k)}
         
         # Criar ambiente WSGI
         environ = {
@@ -121,13 +108,13 @@ def handler(request):
             'wsgi.run_once': False,
         }
         
-        # Adicionar headers HTTP ao environ
+        # Adicionar headers HTTP
         for key, value in headers_dict.items():
             if key.lower() not in ('content-type', 'content-length'):
                 key_upper = key.upper().replace('-', '_')
                 environ[f'HTTP_{key_upper}'] = str(value)
         
-        # Preparar resposta
+        # Response
         status_code = [200]
         headers_list = []
         body_parts = []
@@ -148,26 +135,17 @@ def handler(request):
         
         response_body = b''.join(body_parts)
         
-        # Converter headers para dicionário
-        response_headers = {}
+        # Configurar resposta da Vercel
+        res.status(status_code[0])
         for header, value in headers_list:
-            response_headers[header] = value
-        
-        # Retornar no formato que a Vercel espera
-        return {
-            'statusCode': status_code[0],
-            'headers': response_headers,
-            'body': response_body.decode('utf-8', errors='ignore')
-        }
+            res.set_header(header, value)
+        res.send(response_body)
         
     except Exception as e:
         error_trace = traceback.format_exc()
-        print(f"❌ ERRO no handler: {str(e)}")
+        print(f"ERRO no handler: {str(e)}")
         print(error_trace)
         
-        # Retornar erro no formato correto
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': f'{{"success": false, "error": "Erro interno do servidor: {str(e)}"}}'
-        }
+        res.status(500)
+        res.set_header('Content-Type', 'application/json')
+        res.send(f'{{"success": false, "error": "Erro interno do servidor: {str(e)}"}}')

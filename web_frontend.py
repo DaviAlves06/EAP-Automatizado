@@ -176,20 +176,34 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Em ambientes serverless (ex.: Vercel), /tmp é gravável
 # Vercel usa /tmp como diretório temporário
-BASE_DIR = os.getenv("TMPDIR") or os.getenv("VERCEL") and "/tmp" or tempfile.gettempdir()
+if os.getenv("VERCEL"):
+    # Na Vercel, usar /tmp
+    BASE_DIR = "/tmp"
+else:
+    BASE_DIR = os.getenv("TMPDIR") or tempfile.gettempdir()
+
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 
+# Criar diretórios com tratamento de erro robusto
 try:
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-except Exception as e:
+except (OSError, PermissionError) as e:
     # Se não conseguir criar, usar diretório temporário do sistema
-    BASE_DIR = tempfile.gettempdir()
-    UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-    OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    try:
+        BASE_DIR = tempfile.gettempdir()
+        UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+        OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+    except Exception as e2:
+        # Último recurso: usar diretório atual
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+        OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 @app.after_request
